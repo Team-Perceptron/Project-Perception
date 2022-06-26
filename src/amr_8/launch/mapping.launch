@@ -1,0 +1,42 @@
+<launch>
+
+  <arg name="model" />
+  <param name="robot_description" textfile="$(find amr_8)/urdf/amr_8_without_odometry.urdf" />
+
+  <!-- Launch the gazebo world -->
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="world_name" value="$(find amr_8)/gazebo_worlds/maze.world"/>
+    <!--arg name="world_name" value="$(find amr_8)/worlds/turtlebot3_world.world"/-->
+    <arg name="paused" value="false"/>
+    <arg name="use_sim_time" value="true"/>
+  </include>
+
+  <!-- Load the robot model in the parameter server into the gazebo world -->
+  <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen" args="-urdf -model amr_8.urdf -param robot_description">
+  </node>
+
+  <!-- Joint State Publisher - Publishes Joint Positions -->
+  <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher"/>
+
+  <!-- Robot State Publisher  - Uses URDF and Joint States to compute Transforms -->
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"/>
+
+  <!-- Keyboard Teleop -->
+  <node name="teleop_twist_keyboard" pkg="teleop_twist_keyboard" type="teleop_twist_keyboard.py"/>
+
+  <!-- RVIZ  - Visualization -->
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find amr_8)/rviz/amr.rviz"/>
+
+  <!-- Hector Slam - Mapping Node -->
+  <arg name="geotiff_map_file_path" default="$(find amr_8)/maps"/>
+  
+  <!--param name="/use_sim_time" value="false"/-->
+  <param name="/use_sim_time" value="true"/>
+  
+  <include file="$(find hector_mapping)/launch/hector_mapping.launch"/> 
+  <include file="$(find hector_geotiff_launch)/launch/geotiff_mapper.launch">
+    <arg name="trajectory_source_frame_name" value="scanmatcher_frame"/>
+    <arg name="map_file_path" value="$(arg geotiff_map_file_path)"/>
+  </include>
+
+</launch>
